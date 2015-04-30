@@ -56,9 +56,14 @@
 	}
 
 	function initialize() {	
+//		ws = new WebSocket("ws://alfi.crabdance.com:8080/street_view");
 		ws = new WebSocket("ws://127.0.0.1:8080/street_view");
 		ws.onopen = function(event) {
 			console.log("open");
+			sendMapCentreMessage();
+			sendMapZoomMessage();
+			sendPanoPosMessage();
+			sendPanoPovMessage();
 		}
 		ws.onmessage = function(event) {
 			var $textarea = $('#messages');
@@ -125,15 +130,17 @@
 			console.log("close");					
 		}
 
-	  var fenway = new google.maps.LatLng(42.345573, -71.098326);
+	  //var fenway = new google.maps.LatLng(42.345573, -71.098326);
+	  var princesStreet = new google.maps.LatLng(55.951846, -3.198186);
+	  
 	  var mapOptions = {
-		center: fenway,
+		center: princesStreet,
 		zoom: 14
 	  };
 	  map = new google.maps.Map(
 		  document.getElementById('map-canvas'), mapOptions);
 	  var panoramaOptions = {
-		position: fenway,
+		position: princesStreet,
 		pov: {
 		  heading: 34,
 		  pitch: 10
@@ -142,40 +149,69 @@
 	  panorama = new google.maps.StreetViewPanorama(document.getElementById('pano'), panoramaOptions);
 	  map.setStreetView(panorama);
 
-  google.maps.event.addListener(map, 'center_changed', function() {
+  google.maps.event.addListener(map, 'center_changed', sendMapCentreMessage);
+  
+  google.maps.event.addListener(map, 'zoom_changed', sendMapZoomMessage);
+  //function() {
+  //  var messagePrefix = 'map_zoom';
+//	var message = messagePrefix + ":" + map.getZoom();
+//	if(isLead === true){
+//		sendMessage(message);
+//	}
+ //});
+
+  google.maps.event.addListener(panorama, 'position_changed', sendPanoPosMessage);
+  //function() {
+  //  var messagePrefix = 'pano_pos';
+//	var message = messagePrefix + ":" + panorama.getPosition();
+//	if(isLead === true){
+//		sendMessage(message);
+//	}     
+ // });
+
+  google.maps.event.addListener(panorama, 'pov_changed', sendPanoPovMessage);
+  //function() {
+  //  var messagePrefix = 'pano_pov';
+//	var message = messagePrefix + ":" + panorama.getPov().heading + "," + panorama.getPov().pitch;
+//	if(isLead === true){
+//		sendMessage(message);
+//	}
+//  });
+};
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+sendMapCentreMessage = function() {
     var messagePrefix = 'map_center';
 	var message = messagePrefix + ":" + map.getCenter();
 	if(isLead === true){
 		sendMessage(message);
 	}
-  });
-  
-  google.maps.event.addListener(map, 'zoom_changed', function() {
+};
+
+sendMapZoomMessage = function() {
     var messagePrefix = 'map_zoom';
 	var message = messagePrefix + ":" + map.getZoom();
 	if(isLead === true){
 		sendMessage(message);
 	}
- });
+};
 
-  google.maps.event.addListener(panorama, 'position_changed', function() {
+sendPanoPosMessage = function() {
     var messagePrefix = 'pano_pos';
 	var message = messagePrefix + ":" + panorama.getPosition();
 	if(isLead === true){
 		sendMessage(message);
-	}     
-  });
+	}  
+};
 
-  google.maps.event.addListener(panorama, 'pov_changed', function() {
+sendPanoPovMessage = function() {
     var messagePrefix = 'pano_pov';
 	var message = messagePrefix + ":" + panorama.getPov().heading + "," + panorama.getPov().pitch;
 	if(isLead === true){
 		sendMessage(message);
-	}
-  });
+	}  
 };
-
-google.maps.event.addDomListener(window, 'load', initialize);
 
 function sendTextMessage() {
     var leadFollow = isLead ? 'lead' : 'follow';
