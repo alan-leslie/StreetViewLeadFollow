@@ -11,12 +11,14 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+//import java.util.concurrent.Executors;
+//import java.util.concurrent.ScheduledExecutorService;
+//import java.util.concurrent.TimeUnit;
  
 @WebSocket
 public class StreetViewServiceWebSocket {
+	
+	private MapSVModel theModel = new MapSVModel();
  
     private Session session;
 	public static final Set<StreetViewServiceWebSocket> users = new CopyOnWriteArraySet<StreetViewServiceWebSocket>();
@@ -27,6 +29,7 @@ public class StreetViewServiceWebSocket {
         System.out.println("StreetViewWebSocketServlet Connect number of users is =" + Integer.toString(users.size()));
         this.session = session;
 		users.add(this);
+		// send model
     }
  
     // called when the connection closed
@@ -40,6 +43,8 @@ public class StreetViewServiceWebSocket {
     // called when a message received from the browser
     @OnWebSocketMessage
     public void handleMessage(String message) {
+    	// if the message is a change of model update Model;
+    	// broadcast new model;
         System.out.println("StreetViewWebSocketServlet Message:" + message);
 		for (StreetViewServiceWebSocket user : users) {
 	            user.send(message);
