@@ -20,6 +20,12 @@ public class MapSVModel {
 	private float svPitch;
 	
 	public MapSVModel(){	
+		setMapCentre("56.0", "0.0");
+		setMapZoom(5);
+		setSvPos("56.0", "0.0");
+		setSvHeading(31.0f);
+		setSvPitch(1.0f);
+		setSvZoom(1);
 	}
 	
 	public String getMapCentre() {

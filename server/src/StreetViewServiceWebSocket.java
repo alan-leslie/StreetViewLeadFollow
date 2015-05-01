@@ -5,15 +5,9 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  
-
-
-
 import java.io.IOException;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-//import java.util.concurrent.Executors;
-//import java.util.concurrent.ScheduledExecutorService;
-//import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
  
 @WebSocket
 public class StreetViewServiceWebSocket {
@@ -21,7 +15,7 @@ public class StreetViewServiceWebSocket {
 	private MapSVModel theModel = new MapSVModel();
  
     private Session session;
-	public static final Set<StreetViewServiceWebSocket> users = new CopyOnWriteArraySet<StreetViewServiceWebSocket>();
+	public static final List<StreetViewServiceWebSocket> users = new ArrayList<StreetViewServiceWebSocket>();
  
     // called when the socket connection with the browser is established
     @OnWebSocketConnect
@@ -29,8 +23,15 @@ public class StreetViewServiceWebSocket {
         System.out.println("StreetViewWebSocketServlet Connect number of users is =" + Integer.toString(users.size()));
         this.session = session;
 		users.add(this);
-		// send model
-    }
+		StringBuilder theBuilder = new StringBuilder("model:");
+		String stringifiedModel = theModel.asJSONObject().toString();
+		theBuilder.append(stringifiedModel);
+		
+		if(users.size() > 1){
+			this.send("is_follower:");
+			this.send(theBuilder.toString());
+		}
+	}
  
     // called when the connection closed
     @OnWebSocketClose
@@ -46,8 +47,15 @@ public class StreetViewServiceWebSocket {
     	// if the message is a change of model update Model;
     	// broadcast new model;
         System.out.println("StreetViewWebSocketServlet Message:" + message);
-		for (StreetViewServiceWebSocket user : users) {
-	            user.send(message);
+		
+        theModel.updateModel(message);
+        
+        StringBuilder theBuilder = new StringBuilder("model:");
+		String stringifiedModel = theModel.asJSONObject().toString();
+		theBuilder.append(stringifiedModel);
+
+		for (int i = 1; i < users.size(); ++i) {
+	            users.get(i).send(theBuilder.toString());
 		}
     }
  
