@@ -19,8 +19,8 @@
 <script type="text/javascript">
 	var ws;
     var map; 
-	var panprama;
-    var isLead = false;
+	var panorama;
+    var isLead = true;
 	
 	function getMessageType(message){
 	    var messageType = 'message';
@@ -56,9 +56,14 @@
 	}
 
 	function initialize() {	
+//		ws = new WebSocket("ws://alfi.crabdance.com:8080/street_view");
 		ws = new WebSocket("ws://127.0.0.1:8080/street_view");
 		ws.onopen = function(event) {
 			console.log("open");
+			sendMapCentreMessage();
+			sendMapZoomMessage();
+			sendPanoPosMessage();
+			sendPanoPovMessage();
 		}
 		ws.onmessage = function(event) {
 			var $textarea = $('#messages');
@@ -76,47 +81,17 @@
 					scrollTop : $textarea.height()
 				}, 1000);					
 			} else {
-				if(isLead !== true){
-					switch(messageType){
-						case 'map_center':
-							// reset map centre
-							lat = parseFloat(detailsTokens[0]);
-							lon = parseFloat(detailsTokens[1]);
-							var newCentre = new google.maps.LatLng(lat, lon); 
-							map.setCenter(newCentre); 
-							break;
-						case 'map_zoom':
-							// reset map zoom - parseInt
-							zoom = parseInt(messageDetails);
-							map.setZoom(zoom, 10); 
-							break;
-						case 'pano_pos':
-							// reset pano pos
-							lat = parseFloat(detailsTokens[0]);
-							lon = parseFloat(detailsTokens[1]);
-							var newPos = new google.maps.LatLng(lat, lon); 
-							panorama.setPosition(newPos);
-							break;
-						case 'pano_pov':
-							// reset pano pov (heading and pitch);
-							heading = parseFloat(detailsTokens[0]);
-							pitch = parseFloat(detailsTokens[1]);
-							var pov = {
-										heading: 34,
-										pitch: 10,
-										zoom: 1
-							}
-							pov.heading = heading;
-							pov.pitch = pitch;
-							panorama.setPov(pov);
-							break;
-						case 'pano_zoom':
-							// doesn't seem to be an event for this
-							// reset map zoom - parseInt
-							zoom = parseInt(messageDetails);
-							panorama.setZoom(zoom, 10); 
-							break;
-					}
+				switch(messageType){
+					case 'is_follower':
+						isLead = false;
+						break;
+					case 'model':
+						// rebuild model
+						if(isLead !== true){
+						  var theModel = JSON.parse(messageDetails);
+						  updateModel(theModel);
+						}
+						break;
 				}
 			}
 		}
@@ -125,15 +100,17 @@
 			console.log("close");					
 		}
 
-	  var fenway = new google.maps.LatLng(42.345573, -71.098326);
+	  //var fenway = new google.maps.LatLng(42.345573, -71.098326);
+	  var princesStreet = new google.maps.LatLng(55.951846, -3.198186);
+	  
 	  var mapOptions = {
-		center: fenway,
+		center: princesStreet,
 		zoom: 14
 	  };
 	  map = new google.maps.Map(
 		  document.getElementById('map-canvas'), mapOptions);
 	  var panoramaOptions = {
-		position: fenway,
+		position: princesStreet,
 		pov: {
 		  heading: 34,
 		  pitch: 10
@@ -142,40 +119,72 @@
 	  panorama = new google.maps.StreetViewPanorama(document.getElementById('pano'), panoramaOptions);
 	  map.setStreetView(panorama);
 
-  google.maps.event.addListener(map, 'center_changed', function() {
+  google.maps.event.addListener(map, 'center_changed', sendMapCentreMessage);
+  google.maps.event.addListener(map, 'zoom_changed', sendMapZoomMessage);
+  google.maps.event.addListener(panorama, 'position_changed', sendPanoPosMessage);
+  google.maps.event.addListener(panorama, 'pov_changed', sendPanoPovMessage);
+};
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+updateModel = function(newModel) {
+	var centreTokens = newModel.map_center.split(',');
+	var lat = parseFloat(centreTokens[0]);
+	var lon = parseFloat(centreTokens[1]);
+	var newCentre = new google.maps.LatLng(lat, lon); 
+	map.setCenter(newCentre); 
+	var zoom = parseInt(newModel.map_zoom);
+	map.setZoom(zoom, 10); 
+	var posTokens = newModel.pano_pos.split(',');
+	lat = parseFloat(posTokens[0]);
+	lon = parseFloat(posTokens[1]);
+	var newPos = new google.maps.LatLng(lat, lon); 
+	panorama.setPosition(newPos);
+	var heading = parseFloat(newModel.pano_heading);
+	var pitch = parseFloat(newModel.pano_pitch);
+	var pov = {
+		heading: 34,
+		pitch: 10,
+		zoom: 1
+	}
+	pov.heading = heading;
+	pov.pitch = pitch;
+	panorama.setPov(pov);
+	zoom = parseInt(newModel.pano_zoom);
+	panorama.setZoom(zoom, 10); 
+};
+
+sendMapCentreMessage = function() {
     var messagePrefix = 'map_center';
 	var message = messagePrefix + ":" + map.getCenter();
 	if(isLead === true){
 		sendMessage(message);
 	}
-  });
-  
-  google.maps.event.addListener(map, 'zoom_changed', function() {
+};
+
+sendMapZoomMessage = function() {
     var messagePrefix = 'map_zoom';
 	var message = messagePrefix + ":" + map.getZoom();
 	if(isLead === true){
 		sendMessage(message);
 	}
- });
+};
 
-  google.maps.event.addListener(panorama, 'position_changed', function() {
+sendPanoPosMessage = function() {
     var messagePrefix = 'pano_pos';
 	var message = messagePrefix + ":" + panorama.getPosition();
 	if(isLead === true){
 		sendMessage(message);
-	}     
-  });
+	}  
+};
 
-  google.maps.event.addListener(panorama, 'pov_changed', function() {
+sendPanoPovMessage = function() {
     var messagePrefix = 'pano_pov';
 	var message = messagePrefix + ":" + panorama.getPov().heading + "," + panorama.getPov().pitch;
 	if(isLead === true){
 		sendMessage(message);
-	}
-  });
+	}  
 };
-
-google.maps.event.addDomListener(window, 'load', initialize);
 
 function sendTextMessage() {
     var leadFollow = isLead ? 'lead' : 'follow';
