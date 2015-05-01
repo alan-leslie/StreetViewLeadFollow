@@ -56,8 +56,8 @@
 	}
 
 	function initialize() {	
-//		ws = new WebSocket("ws://alfi.crabdance.com:8080/street_view");
-		ws = new WebSocket("ws://127.0.0.1:8080/street_view");
+		ws = new WebSocket("ws://alfi.crabdance.com:8080/street_view");
+//		ws = new WebSocket("ws://127.0.0.1:8080/street_view");
 		ws.onopen = function(event) {
 			console.log("open");
 		}
