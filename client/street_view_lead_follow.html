@@ -20,7 +20,7 @@
 	var ws;
     var map; 
 	var panorama;
-    var isLead = true;
+    var isLead = false;
 	
 	function getMessageType(message){
 	    var messageType = 'message';
@@ -60,10 +60,6 @@
 		ws = new WebSocket("ws://127.0.0.1:8080/street_view");
 		ws.onopen = function(event) {
 			console.log("open");
-			sendMapCentreMessage();
-			sendMapZoomMessage();
-			sendPanoPosMessage();
-			sendPanoPovMessage();
 		}
 		ws.onmessage = function(event) {
 			var $textarea = $('#messages');
@@ -82,8 +78,12 @@
 				}, 1000);					
 			} else {
 				switch(messageType){
-					case 'is_follower':
-						isLead = false;
+					case 'is_leader':
+						isLead = true;
+						sendMapCentreMessage();
+						sendMapZoomMessage();
+						sendPanoPosMessage();
+						sendPanoPovMessage();
 						break;
 					case 'model':
 						// rebuild model
