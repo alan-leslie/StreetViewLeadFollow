@@ -12,7 +12,7 @@ import java.util.List;
 @WebSocket
 public class StreetViewServiceWebSocket {
 	
-	private MapSVModel theModel = new MapSVModel();
+	private static final MapSVModel theModel = new MapSVModel();
  
     private Session session;
 	public static final List<StreetViewServiceWebSocket> users = new ArrayList<StreetViewServiceWebSocket>();
@@ -27,9 +27,12 @@ public class StreetViewServiceWebSocket {
 		String stringifiedModel = theModel.asJSONObject().toString();
 		theBuilder.append(stringifiedModel);
 		
-		if(users.size() > 1){
-			this.send("is_follower:");
-			this.send(theBuilder.toString());
+		if(users.size() == 1){
+			this.send("is_leader:");			
+		} else {
+			if(users.size() > 1){
+				this.send(theBuilder.toString());
+			}
 		}
 	}
  
